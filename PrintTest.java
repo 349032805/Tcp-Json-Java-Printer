@@ -82,7 +82,7 @@ public class PrintTest implements Printable {
 	}
 
 	public static void printWithPrinterName() {
-		// 通俗理解就是书、文档
+		// 通俗理解就是文档
 		Book book = new Book();
 		// 设置成竖打
 		PageFormat pf = new PageFormat();
