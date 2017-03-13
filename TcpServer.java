@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
 
 import javax.print.PrintService;
 import javax.print.PrintServiceLookup;
@@ -49,7 +50,7 @@ public class TcpServer {
 				try {
 					while (true) {
 						String message = input.readLine();
-						System.out.println("------------------------连上");
+						System.out.println("------------------------连接成功!");
 						System.out.println("------------------------message:" + message);
 						sb.append(message);
 						if (message == null)
@@ -84,26 +85,20 @@ public class TcpServer {
 		if (message == null || message.equals("null") || message == "") {
 			return;
 		} else {
-			// book.append(new PayTicket(message), pf);
-			// book.append(new ConfirmTicket(message), pf);
-			// book.append(new KitchenTicket(message), pf);
-			// book.append(new AddDishTicket(message), pf);
-			// book.append(new DeleteDishTicket(message), pf);
 
 			JSONObject jsonObj = (JSONObject) JSON.parse(message);
 			String printType = jsonObj.getString("printType");
 			System.out.println("------------------printType: " + printType);
 
-			// 确认小票,前台和后厨同时打印
+			// 确认小票,前台和后厨同时打印,(可能不止两台打印机,所以得采用循环遍历的方式传入数据)
 			if (printType.equals("0")) {
 				printConfirmTicket(message);
-				printKitchenTicket(message);
 			}
 
 			// 支付
 			if (printType.equals("1")) {
 				printPayTicket(message);
-			} 
+			}
 
 			// 加菜
 			if (printType.equals("2")) {
@@ -119,271 +114,215 @@ public class TcpServer {
 
 	}
 
-	public static void printPayTicket(String message) {
-		// 通俗理解就是书、文档
-		Book book = new Book();
-		// 设置成竖打
-		PageFormat pf = new PageFormat();
-		pf.setOrientation(PageFormat.PORTRAIT);
-		// 通过Paper设置页面的空白边距和可打印区域。必须与实际打印纸张大小相符。
-		Paper p = new Paper();
-		// p.setSize(182, 80);// 纸张大小
-		p.setImageableArea(0, 0, 140, 840);// A4(595 X
-											// 842)设置打印区域，其实0，0应该是72，72，因为A4纸的默认X,Y边距是72
-		pf.setPaper(p);
-		// 把 PageFormat 和 Printable 添加到书中，组成一个页面
-		book.append(new PayTicket(message), pf);
-
-		// 获取打印服务对象
-		PrinterJob job = PrinterJob.getPrinterJob();
-		// 设置打印类
-		job.setPageable(book);
-
-		// 支付打印一份,取第一个对象的打印机名称
-		PayBean payBean = JSON.parseObject(message, PayBean.class);
-		Demo.PayBean.ModelBean modelBean = payBean.getModel().get(0);
-
-		String printerName = modelBean.getDeviceName();
-
-		HashAttributeSet hs = new HashAttributeSet();
-		hs.add(new PrinterName(printerName, null));
-		PrintService[] pss = PrintServiceLookup.lookupPrintServices(null, hs);
-		if (pss.length == 0) {
-			System.out.println("找不到打印机:" + printerName);
-			return;
-		}
-
-		try {
-			job.setPrintService(pss[0]);
-			job.print();
-		} catch (PrinterException e) {
-			e.printStackTrace();
-		}
-	}
-
+	// 确认小票,前台和后厨同时打印,(可能不止两台打印机,所以得采用循环遍历的方式传入数据)
 	public static void printConfirmTicket(String message) {
-		// 通俗理解就是书、文档
-		Book book = new Book();
-		// 设置成竖打
-		PageFormat pf = new PageFormat();
-		pf.setOrientation(PageFormat.PORTRAIT);
-		// 通过Paper设置页面的空白边距和可打印区域。必须与实际打印纸张大小相符。
-		Paper p = new Paper();
-		// p.setSize(182, 80);// 纸张大小
-		p.setImageableArea(0, 0, 140, 840);// A4(595 X
-											// 842)设置打印区域，其实0，0应该是72，72，因为A4纸的默认X,Y边距是72
-		pf.setPaper(p);
-		// 把 PageFormat 和 Printable 添加到书中，组成一个页面
-		book.append(new ConfirmTicket(message), pf);
 
-		// 获取打印服务对象
-		PrinterJob job = PrinterJob.getPrinterJob();
-		// 设置打印类
-		job.setPageable(book);
-
-		// 取第一个对象的打印机名称
 		ConfirmBean confirmBean = JSON.parseObject(message, ConfirmBean.class);
-		Demo.ConfirmBean.ModelBean modelBean = confirmBean.getModel().get(0);
+		List<Demo.ConfirmBean.ModelBean> modelBeanList = confirmBean.getModel();
 
-		String printerName = "";
+		// 开始遍历数据进行打印,将单个对象传入打印类
+		for (int i = 0; i < modelBeanList.size(); i++) {
+			// 获取单个对象, 注意!这个很重要.
+			Demo.ConfirmBean.ModelBean.OrderDetailDTOBean order = modelBeanList.get(i).getOrderDetailDTO();
 
-		String typeId = modelBean.getTypeId();
+			// 通俗理解就是书、文档
+			Book book = new Book();
+			// 设置成竖打
+			PageFormat pf = new PageFormat();
+			pf.setOrientation(PageFormat.PORTRAIT);
+			// 通过Paper设置页面的空白边距和可打印区域。必须与实际打印纸张大小相符。
+			Paper p = new Paper();
+			// p.setSize(182, 80);// 纸张大小
+			p.setImageableArea(0, 0, 140, 840);// A4(595 X
+												// 842)设置打印区域，其实0，0应该是72，72，因为A4纸的默认X,Y边距是72
+			pf.setPaper(p);
+			// 把 PageFormat 和 Printable 添加到书中，组成一个页面
+			
+			// typeId,前台2,后厨1
+			String typeId = modelBeanList.get(i).getTypeId();
+			if (typeId.equals("2")) {
+				book.append(new ConfirmTicket(order), pf);
+			} else {
+				book.append(new KitchenTicket(order), pf);
+			}
 
-		// typeId,前台2,后厨1
-		if (typeId.equals("2")) {
-			printerName = modelBean.getDeviceName();
-		} else {
-			printerName = confirmBean.getModel().get(1).getDeviceName();
-		}
+			// 获取打印服务对象
+			PrinterJob job = PrinterJob.getPrinterJob();
+			// 设置打印类
+			job.setPageable(book);
 
-		HashAttributeSet hs = new HashAttributeSet();
-		hs.add(new PrinterName(printerName, null));
-		PrintService[] pss = PrintServiceLookup.lookupPrintServices(null, hs);
-		if (pss.length == 0) {
-			System.out.println("找不到打印机:" + printerName);
-			return;
-		}
+			String printerName = modelBeanList.get(i).getDeviceName();
 
-		try {
-			job.setPrintService(pss[0]);
-			job.print();
-		} catch (PrinterException e) {
-			e.printStackTrace();
+			HashAttributeSet hs = new HashAttributeSet();
+			hs.add(new PrinterName(printerName, null));
+			PrintService[] pss = PrintServiceLookup.lookupPrintServices(null, hs);
+			if (pss.length == 0) {
+				System.out.println("找不到打印机:" + printerName);
+				return;
+			}
+
+			try {
+				job.setPrintService(pss[0]);
+				job.print();
+			} catch (PrinterException e) {
+				e.printStackTrace();
+			}
+
 		}
 	}
 
-	public static void printKitchenTicket(String message) {
-		// 通俗理解就是书、文档
-		Book book = new Book();
-		// 设置成竖打
-		PageFormat pf = new PageFormat();
-		pf.setOrientation(PageFormat.PORTRAIT);
-		// 通过Paper设置页面的空白边距和可打印区域。必须与实际打印纸张大小相符。
-		Paper p = new Paper();
-		// p.setSize(182, 80);// 纸张大小
-		p.setImageableArea(0, 0, 140, 840);// A4(595 X
-											// 842)设置打印区域，其实0，0应该是72，72，因为A4纸的默认X,Y边距是72
-		pf.setPaper(p);
-		// 把 PageFormat 和 Printable 添加到书中，组成一个页面
-		book.append(new KitchenTicket(message), pf);
+	// 支付小票
+	public static void printPayTicket(String message) {
 
-		// 获取打印服务对象
-		PrinterJob job = PrinterJob.getPrinterJob();
-		// 设置打印类
-		job.setPageable(book);
+		PayBean payBean = JSON.parseObject(message, PayBean.class);
+		List<Demo.PayBean.ModelBean> modelBeanList = payBean.getModel();
 
-		// 取第二个对象的打印机名称
-		ConfirmBean confirmBean = JSON.parseObject(message, ConfirmBean.class);
-		Demo.ConfirmBean.ModelBean modelBean = confirmBean.getModel().get(0);
+		// 开始遍历数据进行打印,将单个对象传入打印类
+		for (int i = 0; i < modelBeanList.size(); i++) {
+			// 获取单个对象, 注意!这个很重要.
+			Demo.PayBean.ModelBean.OrderDetailDTOBean order = modelBeanList.get(i).getOrderDetailDTO();
+			// typeId,前台2,后厨1
+			String typeId = modelBeanList.get(i).getTypeId();
+			System.out.println("-----------------typeId: "+ typeId);
+			//只有前台打印!
+			if (typeId.equals("2")) {
+				// 通俗理解就是书、文档
+				Book book = new Book();
+				// 设置成竖打
+				PageFormat pf = new PageFormat();
+				pf.setOrientation(PageFormat.PORTRAIT);
+				// 通过Paper设置页面的空白边距和可打印区域。必须与实际打印纸张大小相符。
+				Paper p = new Paper();
+				// p.setSize(182, 80);// 纸张大小
+				p.setImageableArea(0, 0, 140, 840);// A4(595 X
+													// 842)设置打印区域，其实0，0应该是72，72，因为A4纸的默认X,Y边距是72
+				pf.setPaper(p);
+				// 把 PageFormat 和 Printable 添加到书中，组成一个页面
+				
+				book.append(new PayTicket(order), pf);
+			
+				// 获取打印服务对象
+				PrinterJob job = PrinterJob.getPrinterJob();
+				// 设置打印类
+				job.setPageable(book);
 
-		String printerName = "";
+				String printerName = modelBeanList.get(i).getDeviceName();
 
-		String typeId = modelBean.getTypeId();
+				HashAttributeSet hs = new HashAttributeSet();
+				hs.add(new PrinterName(printerName, null));
+				PrintService[] pss = PrintServiceLookup.lookupPrintServices(null, hs);
+				if (pss.length == 0) {
+					System.out.println("找不到打印机:" + printerName);
+					return;
+				}
 
-		// typeId,前台2,后厨1
-		if (typeId.equals("1")) {
-			printerName = modelBean.getDeviceName();
-		} else {
-			printerName = confirmBean.getModel().get(1).getDeviceName();
-		}
-
-		HashAttributeSet hs = new HashAttributeSet();
-		hs.add(new PrinterName(printerName, null));
-		PrintService[] pss = PrintServiceLookup.lookupPrintServices(null, hs);
-		if (pss.length == 0) {
-			System.out.println("找不到打印机:" + printerName);
-			return;
-		}
-
-		try {
-			job.setPrintService(pss[0]);
-			job.print();
-		} catch (PrinterException e) {
-			e.printStackTrace();
+				try {
+					job.setPrintService(pss[0]);
+					job.print();
+				} catch (PrinterException e) {
+					e.printStackTrace();
+				}
+			}
+			
 		}
 	}
 
+	// 加菜小票
 	public static void printAddDishTicket(String message) {
-		// 通俗理解就是书、文档
-		Book book = new Book();
-		// 设置成竖打
-		PageFormat pf = new PageFormat();
-		pf.setOrientation(PageFormat.PORTRAIT);
-		// 通过Paper设置页面的空白边距和可打印区域。必须与实际打印纸张大小相符。
-		Paper p = new Paper();
-		// p.setSize(182, 80);// 纸张大小
-		p.setImageableArea(0, 0, 140, 840);// A4(595 X
-											// 842)设置打印区域，其实0，0应该是72，72，因为A4纸的默认X,Y边距是72
-		pf.setPaper(p);
-		// 把 PageFormat 和 Printable 添加到书中，组成一个页面
-		book.append(new AddDishTicket(message), pf);
 
-		// 获取打印服务对象
-		PrinterJob job = PrinterJob.getPrinterJob();
-		// 设置打印类
-		job.setPageable(book);
-
-		// 取第二个对象的打印机名称
 		AddOrDelDishBean addOrDelDishBean = JSON.parseObject(message, AddOrDelDishBean.class);
-		Demo.AddOrDelDishBean.ModelBean modelBean = addOrDelDishBean.getModel().get(0);
+		List<Demo.AddOrDelDishBean.ModelBean> modelBeanList = addOrDelDishBean.getModel();
 
-		String printerName = modelBean.getDeviceName();
-		String printerName2 = addOrDelDishBean.getModel().get(1).getDeviceName();
+		// 开始遍历数据进行打印,将单个对象传入打印类
+		for (int i = 0; i < modelBeanList.size(); i++) {
+			// 获取单个对象, 注意!这个很重要.
+			Demo.AddOrDelDishBean.ModelBean.OrderDetailDTOBean order = modelBeanList.get(i).getOrderDetailDTO();
 
-		// 设置第一台打印机的参数
-		HashAttributeSet hs = new HashAttributeSet();
-		// String printerName = "XP-58";
-		hs.add(new PrinterName(printerName, null));
-		PrintService[] ps = PrintServiceLookup.lookupPrintServices(null, hs);
-		if (ps.length > 0) {
+			// 通俗理解就是书、文档
+			Book book = new Book();
+			// 设置成竖打
+			PageFormat pf = new PageFormat();
+			pf.setOrientation(PageFormat.PORTRAIT);
+			// 通过Paper设置页面的空白边距和可打印区域。必须与实际打印纸张大小相符。
+			Paper p = new Paper();
+			// p.setSize(182, 80);// 纸张大小
+			p.setImageableArea(0, 0, 140, 840);// A4(595 X
+												// 842)设置打印区域，其实0，0应该是72，72，因为A4纸的默认X,Y边距是72
+			pf.setPaper(p);
+			// 把 PageFormat 和 Printable 添加到书中，组成一个页面
+			book.append(new AddDishTicket(order), pf);
+
+			// 获取打印服务对象
+			PrinterJob job = PrinterJob.getPrinterJob();
+			// 设置打印类
+			job.setPageable(book);
+
+			String printerName = modelBeanList.get(i).getDeviceName();
+
+			HashAttributeSet hs = new HashAttributeSet();
+			hs.add(new PrinterName(printerName, null));
+			PrintService[] pss = PrintServiceLookup.lookupPrintServices(null, hs);
+			if (pss.length == 0) {
+				System.out.println("找不到打印机:" + printerName);
+				return;
+			}
+
 			try {
-				job.setPrintService(ps[0]);
+				job.setPrintService(pss[0]);
 				job.print();
 			} catch (PrinterException e) {
 				e.printStackTrace();
 			}
 
-		} else {
-			System.out.println("找不到打印机:" + printerName);
-		}
-
-		// 设置第二台打印机的参数
-		HashAttributeSet hs2 = new HashAttributeSet();
-		// String printerName2 = "AiBao-A-5801";
-		hs2.add(new PrinterName(printerName2, null));
-		PrintService[] ps2 = PrintServiceLookup.lookupPrintServices(null, hs2);
-		if (ps2.length > 0) {
-			try {
-				job.setPrintService(ps2[0]);
-				job.print();
-			} catch (PrinterException e) {
-				e.printStackTrace();
-			}
-
-		} else {
-			System.out.println("找不到打印机:" + printerName);
 		}
 	}
 
 	public static void printDeleteDishTicket(String message) {
-		// 通俗理解就是书、文档
-		Book book = new Book();
-		// 设置成竖打
-		PageFormat pf = new PageFormat();
-		pf.setOrientation(PageFormat.PORTRAIT);
-		// 通过Paper设置页面的空白边距和可打印区域。必须与实际打印纸张大小相符。
-		Paper p = new Paper();
-		// p.setSize(182, 80);// 纸张大小
-		p.setImageableArea(0, 0, 140, 840);// A4(595 X
-											// 842)设置打印区域，其实0，0应该是72，72，因为A4纸的默认X,Y边距是72
-		pf.setPaper(p);
-		// 把 PageFormat 和 Printable 添加到书中，组成一个页面
-		book.append(new DeleteDishTicket(message), pf);
-
-		// 获取打印服务对象
-		PrinterJob job = PrinterJob.getPrinterJob();
-		// 设置打印类
-		job.setPageable(book);
-
-		// 取第二个对象的打印机名称
 		AddOrDelDishBean addOrDelDishBean = JSON.parseObject(message, AddOrDelDishBean.class);
-		Demo.AddOrDelDishBean.ModelBean modelBean = addOrDelDishBean.getModel().get(0);
+		List<Demo.AddOrDelDishBean.ModelBean> modelBeanList = addOrDelDishBean.getModel();
 
-		String printerName = modelBean.getDeviceName();
-		String printerName2 = addOrDelDishBean.getModel().get(1).getDeviceName();
+		// 开始遍历数据进行打印,将单个对象传入打印类
+		for (int i = 0; i < modelBeanList.size(); i++) {
+			// 获取单个对象, 注意!这个很重要.
+			Demo.AddOrDelDishBean.ModelBean.OrderDetailDTOBean order = modelBeanList.get(i).getOrderDetailDTO();
 
-		// 设置第一台打印机的参数
-		HashAttributeSet hs = new HashAttributeSet();
-		hs.add(new PrinterName(printerName, null));
-		PrintService[] ps = PrintServiceLookup.lookupPrintServices(null, hs);
-		if (ps.length > 0) {
+			// 通俗理解就是书、文档
+			Book book = new Book();
+			// 设置成竖打
+			PageFormat pf = new PageFormat();
+			pf.setOrientation(PageFormat.PORTRAIT);
+			// 通过Paper设置页面的空白边距和可打印区域。必须与实际打印纸张大小相符。
+			Paper p = new Paper();
+			// p.setSize(182, 80);// 纸张大小
+			p.setImageableArea(0, 0, 140, 840);// A4(595 X
+												// 842)设置打印区域，其实0，0应该是72，72，因为A4纸的默认X,Y边距是72
+			pf.setPaper(p);
+			// 把 PageFormat 和 Printable 添加到书中，组成一个页面
+			book.append(new DeleteDishTicket(order), pf);
+
+			// 获取打印服务对象
+			PrinterJob job = PrinterJob.getPrinterJob();
+			// 设置打印类
+			job.setPageable(book);
+
+			String printerName = modelBeanList.get(i).getDeviceName();
+
+			HashAttributeSet hs = new HashAttributeSet();
+			hs.add(new PrinterName(printerName, null));
+			PrintService[] pss = PrintServiceLookup.lookupPrintServices(null, hs);
+			if (pss.length == 0) {
+				System.out.println("找不到打印机:" + printerName);
+				return;
+			}
+
 			try {
-				job.setPrintService(ps[0]);
+				job.setPrintService(pss[0]);
 				job.print();
 			} catch (PrinterException e) {
 				e.printStackTrace();
 			}
 
-		} else {
-			System.out.println("找不到打印机:" + printerName);
 		}
-
-		// 设置第二台打印机的参数
-		HashAttributeSet hs2 = new HashAttributeSet();
-		hs2.add(new PrinterName(printerName2, null));
-		PrintService[] ps2 = PrintServiceLookup.lookupPrintServices(null, hs2);
-		if (ps2.length > 0) {
-			try {
-				job.setPrintService(ps2[0]);
-				job.print();
-			} catch (PrinterException e) {
-				e.printStackTrace();
-			}
-
-		} else {
-			System.out.println("找不到打印机:" + printerName);
-		}
-
 	}
 
 }

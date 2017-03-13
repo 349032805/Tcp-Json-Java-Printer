@@ -12,17 +12,16 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import com.alibaba.fastjson.JSON;
-
 import Demo.AddOrDelDishBean.ModelBean.OrderDetailDTOBean;
 import Demo.AddOrDelDishBean.ModelBean.OrderDetailDTOBean.OrderItemListBean;
 
 
 public class AddDishTicket implements Printable {
-	private String data;
+	
+	private OrderDetailDTOBean order;
 
-	public AddDishTicket(String data) {
-		this.data = data;
+	public AddDishTicket(OrderDetailDTOBean order) {
+		this.order = order;
 	}
 
 	/**
@@ -44,9 +43,6 @@ public class AddDishTicket implements Printable {
 		double x = pageFormat.getImageableX();
 		double y = pageFormat.getImageableY();
 
-		System.out.println("-------------数据: " + data);
-		AddOrDelDishBean addOrDelDishBean = JSON.parseObject(data, AddOrDelDishBean.class);
-		OrderDetailDTOBean order = addOrDelDishBean.getModel().get(0).getOrderDetailDTO();
 
 		// 设置打印字体（字体名称、样式和点大小）（字体名称可以是物理或者逻辑名称）
 		Font font = new Font("宋体", Font.BOLD, 11);

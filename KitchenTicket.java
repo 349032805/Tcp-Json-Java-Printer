@@ -12,18 +12,16 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import com.alibaba.fastjson.JSON;
-
 import Demo.ConfirmBean.ModelBean.OrderDetailDTOBean;
 import Demo.ConfirmBean.ModelBean.OrderDetailDTOBean.OrderItemListBean;
 import Demo.ConfirmBean.ModelBean.OrderDetailDTOBean.ServiceChargesBean;
 
 public class KitchenTicket implements Printable {
-	
-	private String data;
 
-	public KitchenTicket(String data) {
-		this.data = data;
+	private OrderDetailDTOBean order;
+
+	public KitchenTicket(OrderDetailDTOBean order) {
+		this.order = order;
 	}
 
 	/**
@@ -45,16 +43,11 @@ public class KitchenTicket implements Printable {
 		double x = pageFormat.getImageableX();
 		double y = pageFormat.getImageableY();
 
-		System.out.println("-------------数据: " + data);
-		ConfirmBean confirmBean = JSON.parseObject(data, ConfirmBean.class);
-		OrderDetailDTOBean order = confirmBean.getModel().get(0).getOrderDetailDTO();
-
 		// 设置打印字体（字体名称、样式和点大小）（字体名称可以是物理或者逻辑名称）
 		Font font = new Font("宋体", Font.BOLD, 11);
 		g2.setFont(font);// 设置字体
 		float heigth = font.getSize2D();// 字体高度
 		// 标题
-		System.out.println("---------------------(float) y + heigth:" + (float) y + heigth);
 		g2.drawString(order.getTableName(), (float) x, (float) y + heigth);
 
 		font = new Font("宋体", Font.PLAIN, 9);
@@ -113,8 +106,10 @@ public class KitchenTicket implements Printable {
 
 		resetLocation += 15 * serviceChargesList.size();
 
-		g2.drawString("备注：", (float) x, (float) y + resetLocation + 15);
-		g2.drawString(order.getRemark(), (float) x, (float) y + resetLocation + 30);
+		if (order.getRemark() != null && order.getRemark() != "" && !order.getRemark().equals("")) {
+			g2.drawString("备注：", (float) x, (float) y + resetLocation + 15);
+			g2.drawString(order.getRemark(), (float) x, (float) y + resetLocation + 30);
+		}
 
 		switch (pageIndex) {
 		case 0:
