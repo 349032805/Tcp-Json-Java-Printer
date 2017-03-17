@@ -172,7 +172,7 @@ public class ConfirmTicket implements Printable {
 
 		resetLocation += 20;
 		Component component = null;
-		Image src = Toolkit.getDefaultToolkit().getImage("D:\\qrcode.png");
+		Image src = Toolkit.getDefaultToolkit().getImage(Config.IMAGE_PATH);
 		g2.drawImage(src, (int) x + 10, (int) (resetLocation), component);
 
 		resetLocation += 20;
