@@ -24,10 +24,12 @@ import Demo.PayBean.ModelBean.OrderDetailDTOBean.ServiceChargesBean;
  */
 public class PayTicket implements Printable {
 
+	private int paperWidth;
 	private OrderDetailDTOBean order;
 
-	public PayTicket(OrderDetailDTOBean order) {
+	public PayTicket(OrderDetailDTOBean order,int paperWidth) {
 		this.order = order;
+		this.paperWidth = paperWidth;
 	}
 
 	/**
@@ -49,6 +51,10 @@ public class PayTicket implements Printable {
 		// 打印起点坐标
 		double x = pageFormat.getImageableX();
 		double y = pageFormat.getImageableY();
+		
+		if(paperWidth == 80){
+			x += 50;
+		}
 
 		// 设置打印字体（字体名称、样式和点大小）（字体名称可以是物理或者逻辑名称）
 		Font font = new Font("宋体", Font.BOLD, 11);
