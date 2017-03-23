@@ -36,9 +36,6 @@ public class PrintSwingFrame {
 	private static final int WINDOW_WIDTH = 350;
 	private static final int WINDOW_HEIGHT = 480;
 
-	// 配置文件的相对路径
-	public static final String FILE_PATH = "src/Demo/config.properties";
-
 	private static void placeComponents(JPanel panel,JFrame jFrame) {
 
 		panel.setLayout(null);
@@ -231,8 +228,8 @@ public class PrintSwingFrame {
 
 		InputStream inStream = null;
 		try {
-			inStream = new FileInputStream(new File(FILE_PATH));
-		} catch (FileNotFoundException e1) {
+			inStream = new FileInputStream(Config.FILE_PATH);
+		} catch (Exception e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
@@ -252,14 +249,14 @@ public class PrintSwingFrame {
 	// 修改配置文件字段的值
 	public static void addOrUpdatConfig(String key, String value) {
 		Properties prop = new Properties();
-		File file = new File(FILE_PATH);
+		File file = new File(Config.FILE_PATH);
 		InputStream fis;
 		try {
 			fis = new FileInputStream(file);
 			prop.load(fis);
 			// 一定要在修改值之前关闭fis
 			fis.close();
-			OutputStream fos = new FileOutputStream(FILE_PATH);
+			OutputStream fos = new FileOutputStream(Config.FILE_PATH);
 			prop.setProperty(key, value);
 			// 保存，并加入注释
 			prop.store(fos, "Update '" + key + "' value");
