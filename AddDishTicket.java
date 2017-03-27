@@ -15,13 +15,12 @@ import java.util.List;
 import Demo.AddOrDelDishBean.ModelBean.OrderDetailDTOBean;
 import Demo.AddOrDelDishBean.ModelBean.OrderDetailDTOBean.OrderItemListBean;
 
-
 public class AddDishTicket implements Printable {
-	
+
 	private int paperWidth;
 	private OrderDetailDTOBean order;
 
-	public AddDishTicket(OrderDetailDTOBean order,int paperWidth) {
+	public AddDishTicket(OrderDetailDTOBean order, int paperWidth) {
 		this.order = order;
 		this.paperWidth = paperWidth;
 	}
@@ -44,51 +43,58 @@ public class AddDishTicket implements Printable {
 		// 打印起点坐标
 		double x = pageFormat.getImageableX();
 		double y = pageFormat.getImageableY();
-		
-		if(paperWidth == 80){
+
+		if (paperWidth == 80) {
 			x += 50;
 		}
 
+		try {
+			// 设置打印字体（字体名称、样式和点大小）（字体名称可以是物理或者逻辑名称）
+			Font font = new Font("宋体", Font.BOLD, 11);
+			g2.setFont(font);// 设置字体
+			float heigth = font.getSize2D();// 字体高度
+			// 标题
+			g2.drawString("[加]" + order.getTableName(), (float) x, (float) y + heigth);
 
-		// 设置打印字体（字体名称、样式和点大小）（字体名称可以是物理或者逻辑名称）
-		Font font = new Font("宋体", Font.BOLD, 11);
-		g2.setFont(font);// 设置字体
-		float heigth = font.getSize2D();// 字体高度
-		// 标题
-		g2.drawString("[加]" + order.getTableName(), (float) x, (float) y + heigth);
+			font = new Font("宋体", Font.PLAIN, 9);
+			g2.setFont(font);// 设置字体
+			heigth = font.getSize2D();// 字体高度
 
-		font = new Font("宋体", Font.PLAIN, 9);
-		g2.setFont(font);// 设置字体
-		heigth = font.getSize2D();// 字体高度
+			g2.drawString("订单编号: " + order.getOrderNo(), (float) x, (float) y + 40);
+			g2.drawString("下单时间:" + order.getAddtime(), (float) x, (float) y + 55);
+			g2.drawString("打印时间:" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
+					(float) x, (float) y + 70);
 
-		g2.drawString("订单编号: " + order.getOrderNo(), (float) x, (float) y + 40);
-		g2.drawString("下单时间:" + order.getAddtime(), (float) x, (float) y + 55);
-		g2.drawString("打印时间:" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
-				(float) x, (float) y + 70);
+			// 显示标题
+			g2.drawString("菜品", (float) x + 20, (float) y + 85);
+			g2.drawString("份数", (float) x + 70, (float) y + 85);
+			g2.drawString("价格", (float) x + 105, (float) y + 85);
 
-		// 显示标题
-		g2.drawString("菜品", (float) x + 20, (float) y + 85);
-		g2.drawString("份数", (float) x + 70, (float) y + 85);
-		g2.drawString("价格", (float) x + 105, (float) y + 85);
+			List<OrderItemListBean> orderItemList = order.getOrderItemList();
 
-		List<OrderItemListBean> orderItemList = order.getOrderItemList();
+			// 显示内容
+			int yLocation = 100;
+			int row = 15;
 
-		// 显示内容
-		int yLocation = 100;
-		int row = 15;
+			for (int i = 0; i < orderItemList.size(); i++) {
+				OrderItemListBean dish = orderItemList.get(i);
+				g2.drawString(dish.getItemName(), (float) x, (float) y + yLocation + i * row);
+				g2.drawString("x" + String.valueOf(dish.getNumber()), (float) x + 77, (float) y + yLocation + i * row);
+				BigDecimal number = new BigDecimal(String.valueOf(dish.getNumber()));
+				g2.drawString("¥" + dish.getMoney().multiply(number), (float) x + 107, (float) y + yLocation + i * row);
+			}
 
-		for (int i = 0; i < orderItemList.size(); i++) {
-			OrderItemListBean dish = orderItemList.get(i);
-			g2.drawString(dish.getItemName(), (float) x, (float) y + yLocation + i * row);
-			g2.drawString("x" + String.valueOf(dish.getNumber()), (float) x + 77, (float) y + yLocation + i * row);
-			BigDecimal number = new BigDecimal(String.valueOf(dish.getNumber()));
-			g2.drawString("¥" + dish.getMoney().multiply(number), (float) x + 107, (float) y + yLocation + i * row);
+			int resetLocation = 100 + 15 * orderItemList.size();
+
+			if (order.getRemark() != null && order.getRemark() != "" && !order.getRemark().equals("")) {
+				g2.drawString("备注：", (float) x, (float) y + resetLocation + 15);
+				g2.drawString(order.getRemark(), (float) x, (float) y + resetLocation + 30);
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			ExceptionRecord.setRecordWithStoreName(ExceptionRecord.getExceptionMsg(e), order.getStoreName());
 		}
-
-		int resetLocation = 100 + 15 * orderItemList.size();
-
-		g2.drawString("备注：", (float) x, (float) y + resetLocation + 15);
-		g2.drawString(order.getRemark(), (float) x, (float) y + resetLocation + 30);
 
 		switch (pageIndex) {
 		case 0:
